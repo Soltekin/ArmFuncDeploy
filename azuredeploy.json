@@ -60,7 +60,7 @@
                         },
                         {
                             "name": "WEBSITE_CONTENTSHARE",
-                            "value": "[toLower(parameters('_functionAppName'))]"
+                            "value": "[parameters('_functionAppName')]"
                         },
                         {
                             "name": "FUNCTIONS_EXTENSION_VERSION",
