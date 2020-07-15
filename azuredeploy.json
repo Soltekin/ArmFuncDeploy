@@ -1,0 +1,143 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "_storageAccountName": {
+            "type": "string",
+            "metadata": {
+                "description": "The name of the storage account for function app"
+            },
+            "minLength": 3,
+            "maxLength": 24
+        },
+        "_appServicePlanName": {
+            "type": "string",
+            "metadata": {
+                "description": "Function App Service Plan Name"
+            }
+        },
+        "_functionAppName": {
+            "type": "string",
+            "metadata": {
+                "description": "Function App Name"
+            }
+        },
+        "_sourceCodeRepositoryURL": {
+            "type": "string",
+            "metadata": {
+                "description": "Source Code Repository URL"
+            }
+        }
+    },
+    "functions": [],
+    "variables": {},
+    "resources": [
+        {
+            "name": "[parameters('_storageAccountName')]",
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2019-06-01",
+            "tags": 
+            {
+                "displayName": "[parameters('_storageAccountName')]"
+            },
+            "location": "[resourceGroup().location]",
+            "kind": "StorageV2",
+            "sku": {
+                "name": "Standard_LRS"
+            },
+            "resources": [
+                {
+                    "name": "[concat(parameters('_storageAccountName'),'/default/', parameters('_storageAccountName'))]",
+                    "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+                    "apiVersion": "2018-07-01",
+                    "dependsOn": [
+                        "[parameters('_storageAccountName')]"
+                    ],
+                    "properties": {
+                        "publicAccess": "Blob"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "[parameters('_appServicePlanName')]",
+            "type": "Microsoft.Web/serverfarms",
+            "apiVersion": "2018-02-01",
+            "location": "[resourceGroup().location]",
+            "sku": {
+                "name": "F1",
+                "capacity": 1,
+                "tier": "Dynamic"                
+            },
+            "tags": {
+                "displayName": "[parameters('_appServicePlanName')]"
+            },
+            "properties": {
+                "name": "[parameters('_appServicePlanName')]"                
+            }
+        },
+        {
+            "name": "[parameters('_functionAppName')]",
+            "type": "Microsoft.Web/sites",
+            "apiVersion": "2018-11-01",
+            "location": "[resourceGroup().location]",
+            "kind": "functionapp",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', parameters('_appServicePlanName'))]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('_storageAccountName'))]"
+            ],
+            "properties": {
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('_appServicePlanName'))]",
+                "siteConfig": {
+                    "appSettings": [
+                        {
+                            "name": "AzureWebJobsDashboard",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('_storageAccountName'), ';AccountKey=', listKeys('storageAccountID','2015-05-01-preview').key1)]"
+                        },
+                        {
+                            "name": "AzureWebJobsStorage",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('_storageAccountName'), ';AccountKey=', listKeys('storageAccountID','2015-05-01-preview').key1)]"
+                        },
+                        {
+                            "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('_storageAccountName'), ';AccountKey=', listKeys('storageAccountID','2015-05-01-preview').key1)]"
+                        },
+                        {
+                            "name": "WEBSITE_CONTENTSHARE",
+                            "value": "[toLower(parameters('_storageAccountName'))]"
+                        },
+                        {
+                            "name": "FUNCTIONS_EXTENSION_VERSION",
+                            "value": "~2"
+                        },
+                        {
+                            "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+                            "value": "[reference(resourceId('microsoft.insights/components/', 'applicationInsightsName'), '2015-05-01').InstrumentationKey]"
+                        },
+                        {
+                            "name": "FUNCTIONS_WORKER_RUNTIME",
+                            "value": "dotnet"
+                        }
+                    ]
+                }
+            },
+            "resources": [
+                {
+                      "apiVersion": "2018-02-01",
+                      "name": "web",
+                      "type": "sourcecontrols",
+                      "dependsOn": [
+                        "[resourceId('Microsoft.Web/sites/', 'functionApp')]"
+                      ],
+                      "properties": {
+                          "RepoUrl": "[parameters('_sourceCodeRepositoryURL')]",
+                          "branch": "master",
+                          "publishRunbook": true,
+                          "IsManualIntegration": true
+                      }
+                 }
+            ]
+        }
+    ],
+    "outputs": {}
+}
