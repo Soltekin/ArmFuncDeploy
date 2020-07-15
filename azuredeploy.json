@@ -6,9 +6,7 @@
             "type": "string",
             "metadata": {
                 "description": "The name of the storage account for function app"
-            },
-            "minLength": 3,
-            "maxLength": 24
+            }
         },
         "_appServicePlanName": {
             "type": "string",
@@ -26,6 +24,12 @@
             "type": "string",
             "metadata": {
                 "description": "Source Code Repository URL"
+            }
+        },
+        "_fileStorageAccountName": {
+            "type": "string",
+            "metadata": {
+                "description": "File Storage Account Name"
             }
         }
     },
@@ -73,6 +77,18 @@
                         {
                             "name": "FUNCTIONS_WORKER_RUNTIME",
                             "value": "dotnet"
+                        },
+                         {
+                            "name": "cloud5mins_storage",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('_fileStorageAccountName'), ';AccountKey=', listKeys(parameters('_fileStorageAccountName'),'2015-05-01-preview').key1)]"
+                        },
+                        {
+                            "name": "destinationStorage",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('_fileStorageAccountName'), ';AccountKey=', listKeys(parameters('_fileStorageAccountName'),'2015-05-01-preview').key1)]"
+                        },
+                        {
+                            "name": "destinationContainer",
+                            "value": "output-files"
                         }
                     ]
                 }
@@ -93,33 +109,19 @@
                       }
                  }
             ]
-        } ,
+        },
         {
-            "name": "[parameters('_storageAccountName')]",
             "type": "Microsoft.Storage/storageAccounts",
-            "apiVersion": "2019-06-01",
-            "tags": 
-            {
+            "apiVersion": "2018-07-01",
+            "name": "[parameters('_storageAccountName')]",
+            "location": "[resourceGroup().location]",
+            "tags": {
                 "displayName": "[parameters('_storageAccountName')]"
             },
-            "location": "[resourceGroup().location]",
-            "kind": "StorageV2",
             "sku": {
                 "name": "Standard_LRS"
             },
-            "resources": [
-                {
-                    "name": "[concat(parameters('_storageAccountName'),'/default/','input_files')]",
-                    "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
-                    "apiVersion": "2018-07-01",
-                    "dependsOn": [
-                        "[parameters('_storageAccountName')]"
-                    ],
-                    "properties": {
-                        "publicAccess": "Blob"
-                    }
-                }
-            ]
+            "kind": "StorageV2"
         },
         {
             "name": "[parameters('_appServicePlanName')]",
@@ -128,16 +130,49 @@
             "location": "[resourceGroup().location]",
             "sku": {
                 "name": "F1",
-                "capacity": 1,
                 "tier": "Dynamic"                
-            },
-            "tags": {
-                "displayName": "[parameters('_appServicePlanName')]"
             },
             "properties": {
                 "name": "[parameters('_appServicePlanName')]",
                 "computeMode": "Dynamic"               
             }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2018-07-01",
+            "name": "[parameters('_fileStorageAccountName')]",
+            "location": "[resourceGroup().location]",
+            "tags": {
+                "displayName": "[parameters('_fileStorageAccountName')]"
+            },
+            "sku": {
+                "name": "Standard_LRS"
+            },
+            "kind": "StorageV2",
+            "resources": [
+                {
+                    "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+                    "apiVersion": "2018-07-01",
+                    "name": "[concat(parameters('_storageAccountName'),'/default/', 'input-files')]",
+                    "dependsOn": [
+                        "[parameters('_fileStorageAccountName')]"
+                    ],
+                    "properties": {
+                        "publicAccess": "Blob"
+                    }
+                },
+                {
+                    "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+                    "apiVersion": "2018-07-01",
+                    "name": "[concat(parameters('_storageAccountName'),'/default/', 'output-files')]",
+                    "dependsOn": [
+                        "[parameters('_fileStorageAccountName')]"
+                    ],
+                    "properties": {
+                        "publicAccess": "Blob"
+                    }
+                }
+            ]
         }        
     ],
     "outputs": {}
