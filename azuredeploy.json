@@ -86,7 +86,6 @@
                         "RepoUrl": "[variables('repoURL')]",
                         "branch": "[parameters('GitHubBranch')]",
                         "IsManualIntegration": false
-                        //"publishRunbook": true
                     }
                }
             ]
