@@ -85,7 +85,6 @@
                     "properties": {
                         "RepoUrl": "[variables('repoURL')]",
                         "branch": "[parameters('GitHubBranch')]",
-                        "publishRunbook": true,
                         "IsManualIntegration": true
                     }
                }
