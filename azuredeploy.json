@@ -159,7 +159,7 @@
     "outputs": {
      "siteUrl": {
          "type": "string",
-         "value": "[reference(parameters('funcAppName')).hostNames[0]]"
+         "value": "[reference(variables('funcAppName')).hostNames[0]]"
       }
     }
 }
