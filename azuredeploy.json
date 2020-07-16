@@ -1,0 +1,507 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "sites_MstFuncApp_name": {
+            "defaultValue": "MstFuncApp",
+            "type": "String"
+        },
+        "components_MstFuncApp_name": {
+            "defaultValue": "MstFuncApp",
+            "type": "String"
+        },
+        "storageAccounts_mstfuncappstorage_name": {
+            "defaultValue": "mstfuncappstorage",
+            "type": "String"
+        },
+        "serverfarms_ASP_unimportantresources_a5f0_name": {
+            "defaultValue": "ASP-unimportantresources-a5f0",
+            "type": "String"
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "microsoft.insights/components",
+            "apiVersion": "2018-05-01-preview",
+            "name": "[parameters('components_MstFuncApp_name')]",
+            "location": "germanywestcentral",
+            "kind": "web",
+            "properties": {
+                "Application_Type": "web",
+                "Request_Source": "IbizaWebAppExtensionCreate",
+                "RetentionInDays": 90,
+                "publicNetworkAccessForIngestion": "Enabled",
+                "publicNetworkAccessForQuery": "Enabled"
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2019-06-01",
+            "name": "[parameters('storageAccounts_mstfuncappstorage_name')]",
+            "location": "germanywestcentral",
+            "sku": {
+                "name": "Standard_LRS",
+                "tier": "Standard"
+            },
+            "kind": "Storage",
+            "properties": {
+                "networkAcls": {
+                    "bypass": "AzureServices",
+                    "virtualNetworkRules": [],
+                    "ipRules": [],
+                    "defaultAction": "Allow"
+                },
+                "supportsHttpsTrafficOnly": true,
+                "encryption": {
+                    "services": {
+                        "file": {
+                            "keyType": "Account",
+                            "enabled": true
+                        },
+                        "blob": {
+                            "keyType": "Account",
+                            "enabled": true
+                        }
+                    },
+                    "keySource": "Microsoft.Storage"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Web/serverfarms",
+            "apiVersion": "2018-02-01",
+            "name": "[parameters('serverfarms_ASP_unimportantresources_a5f0_name')]",
+            "location": "Germany West Central",
+            "sku": {
+                "name": "Y1",
+                "tier": "Dynamic",
+                "size": "Y1",
+                "family": "Y",
+                "capacity": 0
+            },
+            "kind": "functionapp",
+            "properties": {
+                "perSiteScaling": false,
+                "maximumElasticWorkerCount": 1,
+                "isSpot": false,
+                "reserved": false,
+                "isXenon": false,
+                "hyperV": false,
+                "targetWorkerCount": 0,
+                "targetWorkerSizeId": 0
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/blobServices",
+            "apiVersion": "2019-06-01",
+            "name": "[concat(parameters('storageAccounts_mstfuncappstorage_name'), '/default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_mstfuncappstorage_name'))]"
+            ],
+            "sku": {
+                "name": "Standard_LRS",
+                "tier": "Standard"
+            },
+            "properties": {
+                "cors": {
+                    "corsRules": []
+                },
+                "deleteRetentionPolicy": {
+                    "enabled": false
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/fileServices",
+            "apiVersion": "2019-06-01",
+            "name": "[concat(parameters('storageAccounts_mstfuncappstorage_name'), '/default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_mstfuncappstorage_name'))]"
+            ],
+            "sku": {
+                "name": "Standard_LRS",
+                "tier": "Standard"
+            },
+            "properties": {
+                "cors": {
+                    "corsRules": []
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites",
+            "apiVersion": "2018-11-01",
+            "name": "[parameters('sites_MstFuncApp_name')]",
+            "location": "Germany West Central",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', parameters('serverfarms_ASP_unimportantresources_a5f0_name'))]"
+            ],
+            "kind": "functionapp",
+            "properties": {
+                "enabled": true,
+                "hostNameSslStates": [
+                    {
+                        "name": "mstfuncapp.azurewebsites.net",
+                        "sslState": "Disabled",
+                        "hostType": "Standard"
+                    },
+                    {
+                        "name": "mstfuncapp.scm.azurewebsites.net",
+                        "sslState": "Disabled",
+                        "hostType": "Repository"
+                    }
+                ],
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('serverfarms_ASP_unimportantresources_a5f0_name'))]",
+                "reserved": false,
+                "isXenon": false,
+                "hyperV": false,
+                "siteConfig": {},
+                "scmSiteAlsoStopped": false,
+                "clientAffinityEnabled": true,
+                "clientCertEnabled": false,
+                "hostNamesDisabled": false,
+                "containerSize": 1536,
+                "dailyMemoryTimeQuota": 0,
+                "httpsOnly": false,
+                "redundancyMode": "None"
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/config",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_MstFuncApp_name'), '/web')]",
+            "location": "Germany West Central",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_MstFuncApp_name'))]"
+            ],
+            "properties": {
+                "numberOfWorkers": -1,
+                "defaultDocuments": [
+                    "Default.htm",
+                    "Default.html",
+                    "Default.asp",
+                    "index.htm",
+                    "index.html",
+                    "iisstart.htm",
+                    "default.aspx",
+                    "index.php"
+                ],
+                "netFrameworkVersion": "v4.0",
+                "phpVersion": "5.6",
+                "requestTracingEnabled": false,
+                "remoteDebuggingEnabled": false,
+                "remoteDebuggingVersion": "VS2019",
+                "httpLoggingEnabled": false,
+                "logsDirectorySizeLimit": 35,
+                "detailedErrorLoggingEnabled": false,
+                "publishingUsername": "$MstFuncApp",
+                "scmType": "VSTSRM",
+                "use32BitWorkerProcess": true,
+                "webSocketsEnabled": false,
+                "alwaysOn": false,
+                "managedPipelineMode": "Integrated",
+                "virtualApplications": [
+                    {
+                        "virtualPath": "/",
+                        "physicalPath": "site\\wwwroot",
+                        "preloadEnabled": false
+                    }
+                ],
+                "loadBalancing": "LeastRequests",
+                "experiments": {
+                    "rampUpRules": []
+                },
+                "autoHealEnabled": false,
+                "cors": {
+                    "allowedOrigins": [
+                        "https://functions.azure.com",
+                        "https://functions-staging.azure.com",
+                        "https://functions-next.azure.com"
+                    ],
+                    "supportCredentials": false
+                },
+                "localMySqlEnabled": false,
+                "ipSecurityRestrictions": [
+                    {
+                        "ipAddress": "Any",
+                        "action": "Allow",
+                        "priority": 1,
+                        "name": "Allow all",
+                        "description": "Allow all access"
+                    }
+                ],
+                "scmIpSecurityRestrictions": [
+                    {
+                        "ipAddress": "Any",
+                        "action": "Allow",
+                        "priority": 1,
+                        "name": "Allow all",
+                        "description": "Allow all access"
+                    }
+                ],
+                "scmIpSecurityRestrictionsUseMain": false,
+                "http20Enabled": false,
+                "minTlsVersion": "1.2",
+                "ftpsState": "AllAllowed",
+                "reservedInstanceCount": 0
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/deployments",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_MstFuncApp_name'), '/0205b62c5644441cad68dfb0a70c4a5d')]",
+            "location": "Germany West Central",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_MstFuncApp_name'))]"
+            ],
+            "properties": {
+                "status": 4,
+                "author_email": "N/A",
+                "author": "N/A",
+                "deployer": "VSTS",
+                "message": "{\"type\":\"deployment\",\"commitId\":\"4384213698c901b23ee3f981235cd29b1949d8e7\",\"buildId\":\"253\",\"releaseId\":\"51\",\"buildNumber\":\"20200716.1\",\"releaseName\":\"Release-51\",\"repoProvider\":\"Bitbucket\",\"collectionUrl\":\"https://dev.azure.com/devaxulus/\",\"teamProject\":\"69c72a11-ede5-4cf0-960e-64c6183c9b86\",\"buildProjectUrl\":\"https://dev.azure.com/devaxulus/69c72a11-ede5-4cf0-960e-64c6183c9b86\",\"repositoryUrl\":\"\",\"branch\":\"master\",\"teamProjectName\":\"MstSample\",\"slotName\":\"production\"}",
+                "start_time": "2020-07-16T08:32:26.1173097Z",
+                "end_time": "2020-07-16T08:32:29.7112653Z",
+                "active": false
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/deployments",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_MstFuncApp_name'), '/0891517025d245e59659f818d0b5342c')]",
+            "location": "Germany West Central",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_MstFuncApp_name'))]"
+            ],
+            "properties": {
+                "status": 4,
+                "author_email": "N/A",
+                "author": "N/A",
+                "deployer": "VSTS",
+                "message": "{\"type\":\"deployment\",\"commitId\":\"2d3e97d163a10c352836624d18bf451f9053c1b5\",\"buildId\":\"242\",\"releaseId\":\"44\",\"buildNumber\":\"20200710.11\",\"releaseName\":\"Release-44\",\"repoProvider\":\"Bitbucket\",\"repoName\":\"\",\"collectionUrl\":\"https://dev.azure.com/devaxulus/\",\"teamProject\":\"69c72a11-ede5-4cf0-960e-64c6183c9b86\",\"buildProjectUrl\":\"https://dev.azure.com/devaxulus/69c72a11-ede5-4cf0-960e-64c6183c9b86\",\"repositoryUrl\":\"\",\"branch\":\"master\",\"teamProjectName\":\"MstSample\",\"slotName\":\"production\"}",
+                "start_time": "2020-07-10T07:13:12.5137841Z",
+                "end_time": "2020-07-10T07:13:17.5873139Z",
+                "active": false
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/deployments",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_MstFuncApp_name'), '/60183447e6e94a498fe9675e367a0f67')]",
+            "location": "Germany West Central",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_MstFuncApp_name'))]"
+            ],
+            "properties": {
+                "status": 4,
+                "author_email": "N/A",
+                "author": "N/A",
+                "deployer": "VSTS",
+                "message": "{\"type\":\"deployment\",\"commitId\":\"2ace9030469dc697fadc226e9ecccb61881b275a\",\"buildId\":\"245\",\"releaseId\":\"47\",\"buildNumber\":\"20200710.14\",\"releaseName\":\"Release-47\",\"repoProvider\":\"Bitbucket\",\"repoName\":\"\",\"collectionUrl\":\"https://dev.azure.com/devaxulus/\",\"teamProject\":\"69c72a11-ede5-4cf0-960e-64c6183c9b86\",\"buildProjectUrl\":\"https://dev.azure.com/devaxulus/69c72a11-ede5-4cf0-960e-64c6183c9b86\",\"repositoryUrl\":\"\",\"branch\":\"master\",\"teamProjectName\":\"MstSample\",\"slotName\":\"production\"}",
+                "start_time": "2020-07-10T07:40:57.8014745Z",
+                "end_time": "2020-07-10T07:41:01.2507081Z",
+                "active": false
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/deployments",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_MstFuncApp_name'), '/6ac85d042dc44085b2c1e0f519299740')]",
+            "location": "Germany West Central",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_MstFuncApp_name'))]"
+            ],
+            "properties": {
+                "status": 4,
+                "author_email": "N/A",
+                "author": "N/A",
+                "deployer": "VSTS",
+                "message": "{\"type\":\"deployment\",\"commitId\":\"e195a2b3a6505195aba2ce6b35152c2cde1e5724\",\"buildId\":\"249\",\"releaseId\":\"49\",\"buildNumber\":\"20200710.18\",\"releaseName\":\"Release-49\",\"repoProvider\":\"Bitbucket\",\"collectionUrl\":\"https://dev.azure.com/devaxulus/\",\"teamProject\":\"69c72a11-ede5-4cf0-960e-64c6183c9b86\",\"buildProjectUrl\":\"https://dev.azure.com/devaxulus/69c72a11-ede5-4cf0-960e-64c6183c9b86\",\"repositoryUrl\":\"\",\"branch\":\"master\",\"teamProjectName\":\"MstSample\",\"slotName\":\"production\"}",
+                "start_time": "2020-07-10T10:04:30.5418949Z",
+                "end_time": "2020-07-10T10:04:36.479461Z",
+                "active": false
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/deployments",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_MstFuncApp_name'), '/6f42dbca6e734c4f9349cf67ba9140c5')]",
+            "location": "Germany West Central",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_MstFuncApp_name'))]"
+            ],
+            "properties": {
+                "status": 4,
+                "author_email": "N/A",
+                "author": "N/A",
+                "deployer": "VSTS",
+                "message": "{\"type\":\"deployment\",\"commitId\":\"2c5b45c68458a5ece65b9c4b0f540e1e726540d0\",\"buildId\":\"244\",\"releaseId\":\"46\",\"buildNumber\":\"20200710.13\",\"releaseName\":\"Release-46\",\"repoProvider\":\"Bitbucket\",\"collectionUrl\":\"https://dev.azure.com/devaxulus/\",\"teamProject\":\"69c72a11-ede5-4cf0-960e-64c6183c9b86\",\"buildProjectUrl\":\"https://dev.azure.com/devaxulus/69c72a11-ede5-4cf0-960e-64c6183c9b86\",\"repositoryUrl\":\"\",\"branch\":\"master\",\"teamProjectName\":\"MstSample\",\"slotName\":\"production\"}",
+                "start_time": "2020-07-10T07:39:59.297206Z",
+                "end_time": "2020-07-10T07:40:04.4334236Z",
+                "active": false
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/deployments",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_MstFuncApp_name'), '/85db396cf547498a832c89fd20506177')]",
+            "location": "Germany West Central",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_MstFuncApp_name'))]"
+            ],
+            "properties": {
+                "status": 4,
+                "author_email": "N/A",
+                "author": "N/A",
+                "deployer": "VSTS",
+                "message": "{\"type\":\"deployment\",\"commitId\":\"2d3e97d163a10c352836624d18bf451f9053c1b5\",\"buildId\":\"243\",\"releaseId\":\"45\",\"buildNumber\":\"20200710.12\",\"releaseName\":\"Release-45\",\"repoProvider\":\"Bitbucket\",\"collectionUrl\":\"https://dev.azure.com/devaxulus/\",\"teamProject\":\"69c72a11-ede5-4cf0-960e-64c6183c9b86\",\"buildProjectUrl\":\"https://dev.azure.com/devaxulus/69c72a11-ede5-4cf0-960e-64c6183c9b86\",\"repositoryUrl\":\"\",\"branch\":\"master\",\"teamProjectName\":\"MstSample\",\"slotName\":\"production\"}",
+                "start_time": "2020-07-10T07:21:18.6759007Z",
+                "end_time": "2020-07-10T07:21:23.8934996Z",
+                "active": false
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/deployments",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_MstFuncApp_name'), '/ca7879b726bf4f6e94759071b1bed486')]",
+            "location": "Germany West Central",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_MstFuncApp_name'))]"
+            ],
+            "properties": {
+                "status": 4,
+                "author_email": "N/A",
+                "author": "N/A",
+                "deployer": "VSTS",
+                "message": "{\"type\":\"deployment\",\"commitId\":\"7789e2ce0507639146f1dc5d9c3a7d1447ab8d9a\",\"buildId\":\"254\",\"releaseId\":\"52\",\"buildNumber\":\"20200716.2\",\"releaseName\":\"Release-52\",\"repoProvider\":\"Bitbucket\",\"collectionUrl\":\"https://dev.azure.com/devaxulus/\",\"teamProject\":\"69c72a11-ede5-4cf0-960e-64c6183c9b86\",\"buildProjectUrl\":\"https://dev.azure.com/devaxulus/69c72a11-ede5-4cf0-960e-64c6183c9b86\",\"repositoryUrl\":\"\",\"branch\":\"master\",\"teamProjectName\":\"MstSample\",\"slotName\":\"production\"}",
+                "start_time": "2020-07-16T08:44:36.7279543Z",
+                "end_time": "2020-07-16T08:44:41.1632405Z",
+                "active": false
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/deployments",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_MstFuncApp_name'), '/dd1d2408ebc04518bccc5bd34f564ef7')]",
+            "location": "Germany West Central",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_MstFuncApp_name'))]"
+            ],
+            "properties": {
+                "status": 4,
+                "author_email": "N/A",
+                "author": "N/A",
+                "deployer": "VSTS",
+                "message": "{\"type\":\"deployment\",\"commitId\":\"cf6730da7a67f185f48831cbdfcfb1cd77f42cc6\",\"buildId\":\"252\",\"releaseId\":\"50\",\"buildNumber\":\"20200710.21\",\"releaseName\":\"Release-50\",\"repoProvider\":\"Bitbucket\",\"collectionUrl\":\"https://dev.azure.com/devaxulus/\",\"teamProject\":\"69c72a11-ede5-4cf0-960e-64c6183c9b86\",\"buildProjectUrl\":\"https://dev.azure.com/devaxulus/69c72a11-ede5-4cf0-960e-64c6183c9b86\",\"repositoryUrl\":\"\",\"branch\":\"master\",\"teamProjectName\":\"MstSample\",\"slotName\":\"production\"}",
+                "start_time": "2020-07-10T13:22:25.3378124Z",
+                "end_time": "2020-07-10T13:22:30.6326521Z",
+                "active": false
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/deployments",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_MstFuncApp_name'), '/e5d8625025a6498d8f9024b439e64154')]",
+            "location": "Germany West Central",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_MstFuncApp_name'))]"
+            ],
+            "properties": {
+                "status": 4,
+                "author_email": "N/A",
+                "author": "N/A",
+                "deployer": "VSTS",
+                "message": "{\"type\":\"deployment\",\"commitId\":\"f67af22dd31fb946948e4f7d6adc7f20738c022b\",\"buildId\":\"255\",\"releaseId\":\"53\",\"buildNumber\":\"20200716.3\",\"releaseName\":\"Release-53\",\"repoProvider\":\"Bitbucket\",\"repoName\":\"\",\"collectionUrl\":\"https://dev.azure.com/devaxulus/\",\"teamProject\":\"69c72a11-ede5-4cf0-960e-64c6183c9b86\",\"buildProjectUrl\":\"https://dev.azure.com/devaxulus/69c72a11-ede5-4cf0-960e-64c6183c9b86\",\"repositoryUrl\":\"\",\"branch\":\"master\",\"teamProjectName\":\"MstSample\",\"slotName\":\"production\"}",
+                "start_time": "2020-07-16T08:50:59.7535148Z",
+                "end_time": "2020-07-16T08:51:04.094655Z",
+                "active": true
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/deployments",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_MstFuncApp_name'), '/eeddc014b4004c7dbff5af07728cb6ff')]",
+            "location": "Germany West Central",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_MstFuncApp_name'))]"
+            ],
+            "properties": {
+                "status": 4,
+                "author_email": "N/A",
+                "author": "N/A",
+                "deployer": "VSTS",
+                "message": "{\"type\":\"deployment\",\"commitId\":\"e195a2b3a6505195aba2ce6b35152c2cde1e5724\",\"buildId\":\"248\",\"releaseId\":\"48\",\"buildNumber\":\"20200710.17\",\"releaseName\":\"Release-48\",\"repoProvider\":\"Bitbucket\",\"collectionUrl\":\"https://dev.azure.com/devaxulus/\",\"teamProject\":\"69c72a11-ede5-4cf0-960e-64c6183c9b86\",\"buildProjectUrl\":\"https://dev.azure.com/devaxulus/69c72a11-ede5-4cf0-960e-64c6183c9b86\",\"repositoryUrl\":\"\",\"branch\":\"master\",\"teamProjectName\":\"MstSample\",\"slotName\":\"production\"}",
+                "start_time": "2020-07-10T09:10:26.961367Z",
+                "end_time": "2020-07-10T09:10:32.7837666Z",
+                "active": false
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/functions",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_MstFuncApp_name'), '/GetAvailableSolutions')]",
+            "location": "Germany West Central",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_MstFuncApp_name'))]"
+            ],
+            "properties": {
+                "script_root_path_href": "https://mstfuncapp.azurewebsites.net/admin/vfs/site/wwwroot/GetAvailableSolutions/",
+                "script_href": "https://mstfuncapp.azurewebsites.net/admin/vfs/site/wwwroot/bin/FunctionApp1.dll",
+                "config_href": "https://mstfuncapp.azurewebsites.net/admin/vfs/site/wwwroot/GetAvailableSolutions/function.json",
+                "href": "https://mstfuncapp.azurewebsites.net/admin/functions/GetAvailableSolutions",
+                "config": {},
+                "test_data": "{\"method\":\"post\",\"queryStringParams\":[],\"headers\":[],\"body\":{\"body\":\"\"}}"
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/hostNameBindings",
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('sites_MstFuncApp_name'), '/', parameters('sites_MstFuncApp_name'), '.azurewebsites.net')]",
+            "location": "Germany West Central",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('sites_MstFuncApp_name'))]"
+            ],
+            "properties": {
+                "siteName": "MstFuncApp",
+                "hostNameType": "Verified"
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+            "apiVersion": "2019-06-01",
+            "name": "[concat(parameters('storageAccounts_mstfuncappstorage_name'), '/default/azure-webjobs-hosts')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_mstfuncappstorage_name'), 'default')]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_mstfuncappstorage_name'))]"
+            ],
+            "properties": {
+                "publicAccess": "None"
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+            "apiVersion": "2019-06-01",
+            "name": "[concat(parameters('storageAccounts_mstfuncappstorage_name'), '/default/azure-webjobs-secrets')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_mstfuncappstorage_name'), 'default')]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_mstfuncappstorage_name'))]"
+            ],
+            "properties": {
+                "publicAccess": "None"
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
+            "apiVersion": "2019-06-01",
+            "name": "[concat(parameters('storageAccounts_mstfuncappstorage_name'), '/default/mstfuncapp9f2d')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/fileServices', parameters('storageAccounts_mstfuncappstorage_name'), 'default')]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_mstfuncappstorage_name'))]"
+            ],
+            "properties": {
+                "shareQuota": 5120
+            }
+        }
+    ]
+}
