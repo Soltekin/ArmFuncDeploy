@@ -156,5 +156,10 @@
             ]
         }
     ],
-    "outputs": {}
+    "outputs": {
+     "siteUrl": {
+         "type": "string",
+         "value": "[reference(parameters('funcAppName')).hostNames[0]]"
+      }
+    }
 }
